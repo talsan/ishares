@@ -24,15 +24,15 @@ df_big = athena_helpers.query('select * from qcdb.ishares_holdings '
 ```
 
 #### Key File Explainers
-`config.py`
+######  `config.py`
 Contains critical AWS configuration parameters within the `Aws` class (eg. `S3_ETF_HOLDINGS_BUCKET`, `AWS_KEY`, etc.)
 
-`ishares/build_etf_master_index.py`
+######  `ishares/build_etf_master_index.py`
 This script scrapes the iShares landing page for their "universe" of ETFs. That source webpage (and resulting output) provides etf-level information (namely, inception dates and product page url's) required for downloading holding histories. Output is sent to `./data/ishares-etf-index.csv`
 ![./data/ishares-etf-index.csv](https://raw.githubusercontent.com/talsan/ishares/master/assets/img/ishares-etf-index.PNG)
 
-`ishares/queue_etfdownloaders.py`
+######  `ishares/queue_etfdownloaders.py`
 This script builds a queue of events, that are executed by `etfdownloader.py`. Specifically, for a given iShares ETF ticker, this script determines which holding dates need to be downloaded, based on which holdings were downloaded in prior sessions (with an `overwrite=True` parameter to re-process everything, if desired).
 
-`ishares/etfdownloader.py`
+######  `ishares/etfdownloader.py`
 Given an ETF and a holdings date, this script downloads the csv, validates its structure, formats it, and uploads it to aws s3.

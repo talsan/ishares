@@ -1,0 +1,9 @@
+2020-07-01 23:18:13,689 - __main__ - INFO - IWV - queued 1 holding dates for download
+2020-07-01 23:18:13,725 - __main__ - INFO - IWV - HoldingsProcessor for 2020-06-30 successfully initialized
+2020-07-01 23:18:15,702 - __main__ - INFO - IWV - successful response from ishares.com for request: https://www.ishares.com/us/products/239714/ishares-russell-3000-etf/1467271812596.ajax?fileType=csv&fileName=IWV_holdings&dataType=fund&asOfDate=20200630
+2020-07-01 23:18:16,129 - __main__ - INFO - IWV - archive raw to s3 success: https://s3.console.aws.amazon.com/s3/object/ishares/type=holdings/state=raw/etf=IWV/asofdate=2020-06-30.gz
+2020-07-01 23:18:16,129 - __main__ - INFO - IWV - schema successfully detected: domestic_equity
+2020-07-01 23:18:16,134 - __main__ - INFO - IWV - file successfully formatted prior to s3 upload
+2020-07-01 23:18:16,759 - __main__ - INFO - IWV - s3 upload success: https://s3.console.aws.amazon.com/s3/object/ishares/type=holdings/state=formatted/etf=IWV/asofdate=2020-06-30.csv
+2020-07-01 23:18:16,760 - __main__ - INFO - IWV - post request sleep for 57 seconds ...
+2020-07-01 23:19:13,763 - __main__ - INFO - IWV - successfully completed script

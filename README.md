@@ -1,5 +1,5 @@
-## A Simple iShares ETF Holdings Data Pipeline
-by Tal Sansani & Vinod Chandrashakeran
+# An iShares ETF Holdings Data Pipeline
+by Tal Sansani & Vinod Chandrashekaran
 ### What does this do?
 - Collect a full monthly history (back to 2006) of ETF holdings from iShares.com, for every ETF in the iShares product line
 - Persists data in S3 in such a way that enables codified direct access and Athena querying facilities

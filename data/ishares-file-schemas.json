@@ -1,0 +1,38 @@
+{
+  "domestic_equity": {
+    "columns": [
+      "Ticker",
+      "Name",
+      "Asset Class",
+      "Weight (%)",
+      "Price",
+      "Shares",
+      "Market Value",
+      "Notional Value",
+      "Sector",
+      "SEDOL",
+      "ISIN",
+      "Exchange"
+    ]
+  },
+  "global_equity": {
+    "columns": [
+      "Ticker",
+      "Name",
+      "Asset Class",
+      "Weight (%)",
+      "Price",
+      "Shares",
+      "Market Value",
+      "Notional Value",
+      "Sector",
+      "SEDOL",
+      "ISIN",
+      "Exchange",
+      "Location",
+      "Currency",
+      "Market Currency",
+      "FX Rate"
+    ]
+  }
+}

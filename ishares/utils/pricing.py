@@ -1,4 +1,4 @@
-import config
+from config import AlphaVantage
 import requests
 from datetime import datetime
 from pandas.tseries.offsets import MonthEnd
@@ -8,7 +8,7 @@ import pandas as pd
 def get_ticker_tradingdays(source='av', ticker='IBM', start_date='1900-01-01', end_date='2100-12-31', api_key=None):
     if source == 'av':
         if not api_key:
-            api_key = config.Access.AV_KEY
+            api_key = AlphaVantage.AV_KEY
 
         request = dict(url='https://www.alphavantage.co/query',
                        params={'function': 'TIME_SERIES_DAILY',

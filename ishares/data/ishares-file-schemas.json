@@ -15,7 +15,7 @@
       "Exchange"
     ]
   },
-  "global_equity": {
+  "global_equity_20200531": {
     "columns": [
       "Ticker",
       "Name",
@@ -33,6 +33,28 @@
       "Currency",
       "Market Currency",
       "FX Rate"
+    ]
+  },
+    "global_equity_current": {
+    "columns": [
+      "Ticker",
+      "Name",
+      "Sector",
+      "Asset Class",
+      "Market Value",
+      "Weight (%)",
+      "Notional Value",
+      "Shares",
+      "CUSIP",
+      "ISIN",
+      "SEDOL",
+      "Price",
+      "Location",
+      "Exchange",
+      "Currency",
+      "FX Rate",
+      "Maturity",
+      "Market Currency"
     ]
   }
 }

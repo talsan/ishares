@@ -1,6 +1,6 @@
 import boto3
 from botocore.exceptions import ClientError
-import config
+from config import Aws, iShares
 import pandas as pd
 from io import BytesIO
 import re
@@ -8,10 +8,10 @@ import logging
 log = logging.getLogger(__name__)
 
 # GLOBAL DATA (AWS CLIENT)
-aws_session = boto3.Session(aws_access_key_id=config.Access.AWS_KEY,
-                            aws_secret_access_key=config.Access.AWS_SECRET)
+aws_session = boto3.Session(aws_access_key_id=Aws.AWS_KEY,
+                            aws_secret_access_key=Aws.AWS_SECRET)
 
-s3_client = aws_session.client('s3', region_name=config.iShares.S3_REGION_NAME)
+s3_client = aws_session.client('s3', region_name=Aws.S3_REGION_NAME)
 
 def list_keys(Bucket, Prefix='', Suffix='', full_path=True, remove_ext=False):
     # get pages for bucket and prefix
@@ -38,7 +38,7 @@ def get_etf_holdings(etf_ticker,asofdate):
     s3_key = f'type=holdings/state=formatted/etf={etf_ticker}/asofdate={asofdate}.csv'
 
     try:
-        obj = s3_client.get_object(Bucket=config.iShares.S3_ETF_HOLDINGS_BUCKET,
+        obj = s3_client.get_object(Bucket=Aws.S3_ETF_HOLDINGS_BUCKET,
                                    Key=s3_key)
     except ClientError as e:
         log.error(f'{e.response["Error"]["Code"]}\n'

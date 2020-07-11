@@ -1,26 +1,20 @@
-# Data-Pipeline: iShares ETF holdings 
-### Contents
-1. Overview
-2. Features
-3. ETL Process Examples
-4. Interactive Data Access
-
+Scrape, Store, and Query iShares ETF holding files (from 2006 to present)
 ## Process Overview
-1. ETL: Collect a full monthly history (back to 2006) of ETF holdings from iShares.com, for every ETF in the iShares product line  
-2. Access: Persist data in S3 for direct access, and/or Athena for querying facilities
+1. Data Pipeline: Download a full monthly history of ETF holdings from iShares.com, for every ETF in the iShares product line. [Full list of ETFs here.](https://github.com/talsan/ishares/blob/master/ishares/data/ishares-etf-index.csv)
+2. Data Access: Persist data in S3 for direct access, and/or Athena for querying facilities. [Examples here.](https://github.com/talsan/ishares#example-usage)
 
-### Features & Options
+## Features & Options
 #### Event-driven design:
-- `etf_downloader.py` - a self-contained event for a given ticker & date
-- `batch_etf_downloader.py` - a batch process that queues-and-invokes a series of etf-downloaders
+- [`etf_downloader.py`](https://github.com/talsan/ishares#etf_downloaderpy) - a self-contained event for a given ticker & date
+- [`batch_etf_downloader.py`](https://github.com/talsan/ishares#batch_etf_downloaderpy)  - a batch process that queues-and-invokes a series of etf-downloaders (i.e. ticker-date combinations). The batch process can be run at any time and any frequency to keep etf holdings up to date.
 #### AWS Integration: 
-- Option to output locally or to S3
-- If S3, Athena DDLs (`athenadll.sql`) are available for Table Creation, and simple boto3 wrappers (`athena_helpers`) for SQL Querying.
-#### Careful Scraping
-- Randomized sleep-between-request parameters configurable in `config.py`
-- Randomized user-agents configurable in `config.py`
+- Option to run process using local directories or S3 (via `outputpath` parameter)
+- If S3, an Athena ddl (`athenadll.sql`) is available for Table Creation, and simple boto3 wrappers (`ishares.utils.athena_helpers`) for SQL Querying.
+#### Gentle Scraping
+- Randomized sleep time after requests (lower/upper bound is configurable in `config.py`)
+- Randomized user-agents in request headers (configurable in `config.py`)
 
-### Extract-Transform-Load (from iShares.com)
+## Data Pipeline Details
 ##### `etf_downloader.py`
 self-contained script (and module) to process a single etf holding date
 ##### Inputs: 
@@ -74,32 +68,6 @@ optional arguments:
 
 ```
 
-### Data Access Examples
-```
-from ishares.utils import s3_helpers, athena_helpers
-
-# get a single file from s3
-df_small = s3_helpers.get_etf_holdings('IWV', '2020-06-30')
-
-# query a lot of data with Athena
-df_big = athena_helpers.query('select * from qcdb.ishares_holdings '
-                              'where '
-                              'etf=\'IWV\' '
-                              'and '
-                              'asofdate between date \'2020-01-31\' and date \'2020-06-30\'')
-
-# list available files in s3 bucket
-etf_files = s3_helpers.list_keys(Bucket='etf-holdings')
-```
-
-### What's the use-case?
-- iShares ETF holdings track well-defined indices - baskets of stocks that represent well-defined areas of the market.
-- Having a history of over 300 index-tracking ETF holdings allows you to:
-    1. build universes for stock-selection modeling (e.g. R3000, FTSE, etc.)
-    2. proxy stock level exposures to MSCI GICS sectors and industries (via Sector ETFs)
-    3. track market behavior (e.g. value vs growth)
-    4. Anything else your curious quant heart desires :)
-    
 ### Example Usage
 ```
 from ishares.utils import s3_helpers, athena_helpers
@@ -112,21 +80,3 @@ df_big = athena_helpers.query('select * from qcdb.ishares_holdings '
                               'where etf=\'IWV\' '
                               'and asofdate between date \'2020-01-31\' and date \'2020-06-30\'')
 ```
-
-### Project Details
-#####  `config.py`
-Contains critical AWS configuration parameters within the `Aws` class (e.g. `S3_ETF_HOLDINGS_BUCKET`, `AWS_KEY`, etc.)
-
-#####  `ishares/build_etf_master_index.py`
-This script scrapes the iShares landing page for their "universe" of ETFs. That source webpage (and resulting output) provides etf-level information (namely, inception dates and product page url's) required for downloading holding histories. Output is sent to `./data/ishares-etf-index.csv`
-![./data/ishares-etf-index.csv](https://raw.githubusercontent.com/talsan/ishares/master/assets/img/ishares-etf-index.PNG)
-
-#####  `ishares/queue_etfdownloaders.py`
-This script builds a queue of events that are executed by `etfdownloader.py`. Specifically, for a given iShares ETF ticker, this script determines which holding dates need to be downloaded, based on which holdings were downloaded in prior sessions (with an `overwrite=True` parameter to re-process everything, if desired).
-
-#####  `ishares/etfdownloader.py`
-Given an ETF and a holdings date (i.e. a single "event"), this script downloads the csv, validates its structure, formats it, and uploads it to aws s3.
-
-### S3 Storage Example
-
-### Athena Query Output Example

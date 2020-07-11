@@ -1,7 +1,7 @@
-# Scrape, Store, and Query iShares ETF holding files (from 2006 to present)
+# Scrape, Store, and Query iShares ETF holding files
 This document outlines the iShares ETF data pipeline and the code that powers it. If you want to understand the context behind this project, see [`READMEQuant.md`](https://github.com/talsan/ishares/blob/master/READMEQuant.md)
 ## Process Overview
-1. Data Pipeline: Download a full monthly history of ETF holdings from iShares.com, for every ETF in the iShares product line. [Full list of ETFs here.](https://github.com/talsan/ishares/blob/master/ishares/data/ishares-etf-index.csv)
+1. Data Pipeline: Download a full monthly history of ETF holdings from iShares.com, for every ETF in the iShares product line. [Full list of ETFs here.](https://github.com/talsan/ishares/blob/master/ishares/data/ishares-etf-index.csv). History available from 2006 to present.
 2. Data Access: Persist data in S3 for direct access, and/or Athena for querying facilities. [Examples here.](https://github.com/talsan/ishares#example-usage)
 
 ## Features & Options

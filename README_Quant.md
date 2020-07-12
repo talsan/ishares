@@ -21,7 +21,3 @@ A sample file looks like this.
 5. Understand Market movements
 6. Id-mapping: point-in-time SEDOLS, CUSIPS
 7. Other Metadata 
-
-** Most index data is incredibly basic and easy to construct. MSCI and Russell weren't first to do it and did not perfect it (if something like that is even possible), but since everyone in the community aggreed to go with them (it's one less moving part when comparing the deluge of active vehiclces), they reap massive licensing rewards over a methodology that isn't remotely unique. 
-
-It's like if the driving public got together and agreed that stop lights, stop signs, and brake lights should all be the same hue of red. An opportunistic team opened up MS Paint, picked the color "red," and sold it as a subscription with their name on it in really big letters. It somehow made sense at the time, and now, when someone wants to put up a stop sign (using the color everyone widely recognizes), they need to pay dearly for it.

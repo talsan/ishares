@@ -3,7 +3,7 @@
 At my old quant shop, every financial data-item you could reasonably want would be sitting neatly for you in a SQL table. 
 In a few joins, you usually had what you wanted. Fast forward to now: I got nothin. Most research projects or even basic analysis, requires a few fundamental data-items just to get started: Identifiers, asset returns (prices/dividends), industry constituents, and broad market indices.
 
-Traditional Index vendors like MSCI and Russell charge exhorbitant amounts of money for a history of index constituents*
+Traditional Index vendors like MSCI and Russell charge exhorbitant amounts of money for a history of index constituents. There's no magic in the (basic, cap-weighted) construction or methodology, they just got their names on it first. 
 
 The core idea behind this project to use ETFs as a proxies for broad market/sector indices. By design, each ETF tracks its index very closely, and they're also freely available through most all company websites (iShares, SPDRs, Invesco, Vangaurd, etc.). 
 

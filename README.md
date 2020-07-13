@@ -5,7 +5,7 @@ This document outlines the iShares ETF data pipeline and the code that powers it
 2. Data Access: Persist data in S3 for direct access, and/or Athena for querying facilities. [Examples here.](https://github.com/talsan/ishares#example-usage)
 
 ## Features & Options
-#### Event-driven design:
+#### Decoupled into functional units:
 - [`etf_downloader.py`](https://github.com/talsan/ishares#etf_downloaderpy) - a self-contained event for a given ticker & date
 - [`batch_etf_downloader.py`](https://github.com/talsan/ishares#batch_etf_downloaderpy)  - a batch process that queues-and-invokes a series of etf-downloaders (i.e. ticker-date combinations). The batch process can be run at any time and any frequency to keep etf holdings up to date.
 #### AWS Integration: 
@@ -70,7 +70,7 @@ optional arguments:
 ```
 
 ### Example Usage
-```
+```python
 from ishares.utils import s3_helpers, athena_helpers
 
 # get a single file from s3

@@ -1,7 +1,6 @@
 # A Quantsplainer
 `README_Quant.md` provides quantitative context behind the code. If you want to learn more about the technical elements and usage patterns, visit `README.md`.
-<hr>
-
+===
 At my old quant shop, every financial data-item you could reasonably want was sitting neatly for you in a SQL table. In a few joins, you usually had what you wanted.
 
 Fast forward to now: *I got nothin*. Most research projects require a few fundamental data-items just to get started: date-stamped identifiers, asset returns (prices/dividends), industry constituents, and broad market indices. Traditional Index vendors like MSCI and Russell charge exhorbitant amounts of money for a history of index constituents and other basic data items. 

@@ -1,5 +1,5 @@
 # A Quantsplainer
-##### The purpose of the `README_Quant.md` file is to answer the question: why would a quant ever care about this? This document provides context behind the code.
+#### The purpose of the `README_Quant.md` file is to answer the question: why would a quant ever care about this? This document provides context behind the code.
 
 At my old quant shop, every financial data-item you could reasonably want was sitting neatly for you in a SQL table. 
 In a few joins, you usually had what you wanted.

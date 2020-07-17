@@ -67,19 +67,6 @@ optional arguments:
 
 ```
 
-### Example Usage
-```
-from ishares.utils import s3_helpers, athena_helpers
-
-# get a single file from s3
-df_small = s3_helpers.get_etf_holdings('IWV', '2020-06-30')
-
-# query a lot of data with Athena
-df_big = athena_helpers.query('select * from qcdb.ishares_holdings '
-                              'where etf=\'IWV\' '
-                              'and asofdate between date \'2020-01-31\' and date \'2020-06-30\'')
-```
-
 ##### Output: 
 S3 naming convention: `<config.Aws.OUPUT_BUCKET>/type=holdings/state=formatted/etf=IWF/asofdate=2006-09-29.csv`  
 Local naming convention: [`./ceopay/output/type=holdings/state=formatted/etf=IWF/asofdate=2006-09-29.csv`](https://github.com/talsan/ceopay/blob/master/data/masteridx/year%3D2020/qtr%3D2.txt)    

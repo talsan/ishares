@@ -1,5 +1,5 @@
 # Scrape, Store, and Query iShares ETF holding files
-Before (or after) diving into the code, if you want to understand the context behind this project, see [`READMEQuant.md`](https://github.com/talsan/ishares/blob/master/READMEQuant.md)
+Before (or after) diving into the code, if you want to understand the context behind this project, see [`READMEQuant.md`](https://github.com/talsan/ishares/blob/master/README_Quant.md)
 
 ## Usage Patterns
 #### Modules for getting etf holdings 

@@ -20,8 +20,8 @@ A sample file looks like this.
 <to do>
   
 ## Use-Cases for Quantitative Analysis
-1. **"universe" histories** - to the extent that your model is cross-sectional (comparing stocks across a distribution, at a given point in time) it's important to know what companies existed when. 
-2. **benchmarks** - comparing (and optimizing) your strategy against a low-cost ETF is as good a benchmark as any
+1. **"Universe" histories** - to the extent that your model is cross-sectional (comparing stocks across a distribution, at a given point in time) it's important to know what companies existed when. 
+2. **Benchmarks** - comparing (and optimizing) your strategy against a low-cost ETF is as good a benchmark as any
 3. **Stock-Level Exposures to Sectors** - meta-data within each holding file contains sector assignments, which are critical inputs to model construciton and performance attribution (industries explain roughly %X percent of cross-sectional variance)
 4. **Understand Market movements** - with over 300 ETFs, iShares has nearly every corner of the market covered; tracking returns of different representative categories helps describe micro market movements.
 5. **Id-mapping**: point-in-time SEDOLs, CUSIPs, ISINs, Tickers, etc.

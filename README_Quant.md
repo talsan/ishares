@@ -1,6 +1,8 @@
 # A Quantsplainer
 `README_Quant.md` provides quantitative context behind the code. If you want to learn more about the technical elements and usage patterns, visit `README.md`.
-===
+
+---
+
 At my old quant shop, every financial data-item you could reasonably want was sitting neatly for you in a SQL table. In a few joins, you usually had what you wanted.
 
 Fast forward to now: *I got nothin*. Most research projects require a few fundamental data-items just to get started: date-stamped identifiers, asset returns (prices/dividends), industry constituents, and broad market indices. Traditional Index vendors like MSCI and Russell charge exhorbitant amounts of money for a history of index constituents and other basic data items. 
@@ -18,7 +20,7 @@ Here are the top 10 by AUM:
 A sample file looks like this.
 <to do>
   
-### Quantitative Use Cases
+### Use-Cases for Quantitative Analysis
 1. "universe" histories - to the extent that your model is cross-sectional (comparing stocks across a distribution, at a given point in time) it's important to know what companies existed when. 
 2. benchmark - comparing (and optimizing) your strategy against a low-cost ETF is as good a benchmark as any
 3. Stock-Level Exposures to Industries - 

@@ -1,7 +1,26 @@
 # Scrape, Store, and Query iShares ETF holding files
 Before (or after) diving into the code, if you want to understand the context behind this project, see [`READMEQuant.md`](https://github.com/talsan/ishares/blob/master/README_Quant.md)
 
-## Usage Patterns
+## Quickly Get Monthly Holdings for an iShares ETF
+- Run this script: [`./ishares/direct_downloader.py`](https://github.com/talsan/ishares/blob/master/ishares/direct_downloader.py)
+#### Inputs
+```pyton
+etf_landing_page = 'https://www.ishares.com/us/products/239707/ishares-russell-1000-etf'
+start_date = '2019-12-31'
+end_date = datetime.now().strftime('%Y-%m-%d')
+output_file = './data/direct_downloader/IWB_holdings_20220823.csv'
+```
+#### Output
+| as_of_date | ticker | name                           | sector                 | asset_class | market_value | weight  | notional_value | shares  | cusip     | isin         | sedol   | price   | location      | exchange                     | currency | fx_rate | maturity |
+| ---------- | ------ | ------------------------------ | ---------------------- | ----------- | ------------ | ------- | -------------- | ------- | --------- | ------------ | ------- | ------- | ------------- | ---------------------------- | -------- | ------- | -------- |
+| 2019-12-31 | AAPL   | APPLE INC                      | Information Technology | Equity      | 980033676.65 | 4.38868 | 980033676.65   | 3337421 | 037833100 | US0378331005 | 2046251 | 293.65  | United States | NASDAQ                       | USD      | 1.00    | -        |
+| 2019-12-31 | MSFT   | MICROSOFT CORP                 | Information Technology | Equity      | 895545656.1  | 4.01033 | 895545656.1    | 5678793 | 594918104 | US5949181045 | 2588173 | 157.7   | United States | NASDAQ                       | USD      | 1.00    | -        |
+| 2019-12-31 | AMZN   | AMAZON COM INC                 | Consumer Discretionary | Equity      | 573782037.6  | 2.56945 | 573782037.6    | 310515  | 023135106 | US0231351067 | 2000019 | 1847.84 | United States | NASDAQ                       | USD      | 1.00    | -        |
+| 2019-12-31 | FB     | FACEBOOK CLASS A  INC          | Communication          | Equity      | 368197564.5  | 1.64882 | 368197564.5    | 1793898 | 30303M102 | US30303M1027 | B7TL820 | 205.25  | United States | NASDAQ                       | USD      | 1.00    | -        |
+| 2019-12-31 | BRKB   | BERKSHIRE HATHAWAY INC CLASS B | Financials             | Equity      | 332579236.5  | 1.48932 | 332579236.5    | 1468341 | 084670702 | US0846707026 | 2073390 | 226.5   | United States | New York Stock Exchange Inc. | USD      | 1.00    | -        |
+| 2019-12-31 | JPM    | JPMORGAN CHASE & CO            | Financials             | Equity      | 326360213.2  | 1.46147 | 326360213.2    | 2341178 | 46625H100 | US46625H1005 | 2190385 | 139.4   | United States | New York Stock Exchange Inc. | USD      | 1.00    | -        |
+
+## Advanced Usage Patterns for Mass Downloading + Maintenance
 #### Modules for getting etf holdings 
 - `etf_downloader.py` provides functions to get individual etf holdings from ishares.com (wherein each call/event is a `etf_ticker + holding_date` pair).
 #### Batch Processes for syncing iShares.com with your local or s3 filestores

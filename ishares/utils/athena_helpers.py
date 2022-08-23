@@ -1,6 +1,6 @@
 import boto3
 import time
-import config
+from config import Aws, iShares
 from botocore.exceptions import ClientError
 import pandas as pd
 from io import BytesIO
@@ -31,8 +31,8 @@ Output:
 # -----------------------------------------------------------------------------------
 # misc configurations
 # -----------------------------------------------------------------------------------
-aws_session = boto3.Session(aws_access_key_id=config.Access.AWS_KEY,
-                            aws_secret_access_key=config.Access.AWS_SECRET)
+aws_session = boto3.Session(aws_access_key_id=Aws.AWS_KEY,
+                            aws_secret_access_key=Aws.AWS_SECRET)
 
 
 class AthenaQuery():
@@ -40,9 +40,9 @@ class AthenaQuery():
     def __init__(self, user_query, database='qcdb'):
         self.query = user_query
         self.database = database
-        self.query_output_bucket = config.iShares.ATHENA_OUTPUT_BUCKET
-        self.athena_client = aws_session.client('athena', region_name=config.iShares.ATHENA_REGION_NAME)
-        self.s3_client = aws_session.client('s3', region_name=config.iShares.ATHENA_REGION_NAME)
+        self.query_output_bucket = Aws.ATHENA_OUTPUT_BUCKET
+        self.athena_client = aws_session.client('athena', region_name=Aws.ATHENA_REGION_NAME)
+        self.s3_client = aws_session.client('s3', region_name=Aws.ATHENA_REGION_NAME)
         self.execution_id = ''  # provided by aws after query is submitted
         self.output_dir = ''  # derived from execution_id (to keep query and output closely linked)
         self.output_df = pd.DataFrame()
@@ -58,7 +58,7 @@ class AthenaQuery():
             ResultConfiguration={
                 'OutputLocation': f's3://{self.query_output_bucket}/{self.output_loc}'
             },
-            WorkGroup=config.iShares.ATHENA_WORKGROUP,
+            WorkGroup=Aws.ATHENA_WORKGROUP,
         )
         return response
 
@@ -68,7 +68,7 @@ class AthenaQuery():
         state = 'QUEUED'
 
         start_time = datetime.now()
-        while ((datetime.now() - start_time).total_seconds() < config.iShares.ATHENA_QUERY_TIMEOUT) \
+        while ((datetime.now() - start_time).total_seconds() < Aws.ATHENA_QUERY_TIMEOUT) \
                 and (state in ['RUNNING', 'QUEUED']):
             response = self.athena_client.get_query_execution(QueryExecutionId=self.execution_id)
 
@@ -87,7 +87,7 @@ class AthenaQuery():
                     log.info(pprint.pformat(response))
                     return s3_key
 
-            time.sleep(config.iShares.ATHENA_SLEEP_BETWEEN_REQUESTS)
+            time.sleep(Aws.ATHENA_SLEEP_BETWEEN_REQUESTS)
 
         return False
 
@@ -103,14 +103,14 @@ class AthenaQuery():
         return df
 
     def display_s3_url(self):
-        s3_output_url = f'{config.iShares.S3_OBJECT_ROOT}/{self.query_output_bucket}/{self.output_loc}/{self.execution_id}.csv'
+        s3_output_url = f'{Aws.S3_OBJECT_ROOT}/{self.query_output_bucket}/{self.output_loc}/{self.execution_id}.csv'
         s3_output_str = f's3 output: {s3_output_url}'
         log.info(s3_output_str)
         print(s3_output_str)
 
     def display_athena_url(self):
-        athena_query_url = f'https://{config.iShares.ATHENA_REGION_NAME}.console.aws.amazon.com/athena/home?' \
-                           f'region={config.iShares.ATHENA_REGION_NAME}#query/history/{self.execution_id}'
+        athena_query_url = f'https://{Aws.ATHENA_REGION_NAME}.console.aws.amazon.com/athena/home?' \
+                           f'region={Aws.ATHENA_REGION_NAME}#query/history/{self.execution_id}'
         athena_query_str = f'athena query: {athena_query_url}'
         log.info(athena_query_str)
         print(athena_query_str)

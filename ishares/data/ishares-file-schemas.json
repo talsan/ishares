@@ -35,7 +35,7 @@
       "FX Rate"
     ]
   },
-    "global_equity_current": {
+  "global_equity_20210211": {
     "columns": [
       "Ticker",
       "Name",
@@ -55,6 +55,47 @@
       "FX Rate",
       "Maturity",
       "Market Currency"
+    ]
+  },
+  "global_equity_20211006": {
+    "columns": [
+      "Ticker",
+      "Name",
+      "Sector",
+      "Asset Class",
+      "Market Value",
+      "Weight (%)",
+      "Notional Value",
+      "Shares",
+      "CUSIP",
+      "ISIN",
+      "SEDOL",
+      "Price",
+      "Location",
+      "Exchange",
+      "Currency",
+      "FX Rate",
+      "Market Currency",
+      "Accrual Date"
+    ]
+  },
+  "global_equity_current": {
+    "columns": [
+      "Ticker",
+      "Name",
+      "Sector",
+      "Asset Class",
+      "Market Value",
+      "Weight (%)",
+      "Notional Value",
+      "Shares",
+      "Price",
+      "Location",
+      "Exchange",
+      "Currency",
+      "FX Rate",
+      "Market Currency",
+      "Accrual Date"
     ]
   }
 }

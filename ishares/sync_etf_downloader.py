@@ -63,7 +63,10 @@ def main(tickers: list, outputpath: str, overwrite: bool) -> None:
     for ticker in tickers:
         holdings_download_list = build_holdings_download_queue(ticker, outputpath, overwrite)
         for holding_date in holdings_download_list:
-            etf_downloader.main(ticker, holding_date, outputpath)
+            try:
+                etf_downloader.main(ticker, holding_date, outputpath)
+            except BaseException as e:
+                log.error(e)
             sleep_between_requests()
 
 
@@ -72,13 +75,14 @@ def main(tickers: list, outputpath: str, overwrite: bool) -> None:
 if __name__ == "__main__":
     # command line arguments
     parser = argparse.ArgumentParser(description='batch process that queues-and-invokes a series of etf_downloaders')
-    parser.add_argument('tickers', help=f'List of ETF Tickers (space-delimeted) you wish to download; '
+    parser.add_argument('tickers', help=f'list of ETF Tickers (space-delimeted) you wish to download; '
                                         f'full list of tickers located here: {iShares.ETF_MASTER_INDEX_LOC}', nargs='+')
     parser.add_argument('--outputpath', help=f'where to send output on local machine; if outputpath==\'s3\', output is '
                                              f'uploaded to the Aws.OUPUT_BUCKET variable defined in config.py',
                         required=True)
     parser.add_argument('--overwrite',
-                        help=f'Overwrite holdings that have already been downloaded to S3 (otherwise it\'s an update)',
+                        help=f'overwrite (re-download) etf holdings that have already been downloaded to <outputpath>; '
+                             f'otherwise it\'s an update (i.e. only download new holdings files for a given ETF)',
                         action='store_true')
     args = parser.parse_args()
 

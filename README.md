@@ -82,7 +82,11 @@ df_big = athena_helpers.query('select * from qcdb.ishares_holdings '
 
 ##### Output: 
 S3 naming convention: `<config.Aws.OUPUT_BUCKET>/type=holdings/state=formatted/etf=IWF/asofdate=2006-09-29.csv`  
-Local naming convention: [`./ceopay/output/type=holdings/state=formatted/etf=IWF/asofdate=2006-09-29.csv`](https://github.com/talsan/ceopay/blob/master/data/masteridx/year%3D2020/qtr%3D2.txt)    
+Local naming convention: [`./ishares/output/type=holdings/state=formatted/etf=IWF/asofdate=2006-09-29.csv`](https://github.com/talsan/ceopay/blob/master/data/masteridx/year%3D2020/qtr%3D2.txt)    
 ##### Archive of Original Extract (Pre-Transform-and-Load)
 S3 naming convention: `<config.Aws.OUPUT_BUCKET>/type=holdings/state=formatted/etf=IWF/asofdate=2006-09-29.csv`  
-Local naming convention: [`./ceopay/output/type=holdings/state=formatted/etf=IWF/asofdate=2006-09-29.csv`](https://github.com/talsan/ceopay/blob/master/data/masteridx/year%3D2020/qtr%3D2.txt)  
+Local naming convention: [`./ishares/output/type=holdings/state=formatted/etf=IWF/asofdate=2006-09-29.csv`](https://github.com/talsan/ceopay/blob/master/data/masteridx/year%3D2020/qtr%3D2.txt)  
+
+##### Process Flow
+1. `ishares/build_etf_master_index.py` - run this periodically to refresh the ETF universe
+2. 

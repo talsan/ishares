@@ -1,7 +1,7 @@
 import requests
 from lxml import html
 import pandas as pd
-import config
+from config import iShares
 
 '''
 Overview: 
@@ -27,9 +27,9 @@ Output:
         product_url -- etf landing page (path to etf history of holdings files)
 '''
 
-def main():
+def scrape_etf_index():
     # source html document object
-    r = requests.get(config.iShares.LANDING_PAGE)
+    r = requests.get(iShares.LANDING_PAGE)
     index_root = html.fromstring(r.text)
 
     # get table
@@ -47,5 +47,6 @@ def main():
     # format dataframe start_date column to %Y%m%d
     etf_info['start_date'] = pd.to_datetime(etf_info['start_date'], format='%b %d, %Y')
 
-    # local output
-    etf_info.to_csv(config.iShares.ETF_MASTER_INDEX_LOC)
+def main():
+    etf_info = scrape_etf_index()
+    etf_info.to_csv(iShares.ETF_MASTER_INDEX_LOC)

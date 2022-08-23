@@ -12,6 +12,7 @@ import boto3
 import logging
 import json
 import multiprocessing as mp
+from pandas.tseries.offsets import BDay
 
 log = logging.getLogger(__name__)
 
@@ -49,7 +50,9 @@ class HoldingsProcessor:
         log.info(f'HoldingsProcessor for {self.holdings_date} successfully initialized')
 
     def request_csv(self):
+
         yyyymmdd = datetime.strptime(self.holdings_date, '%Y-%m-%d').strftime('%Y%m%d')
+
         request = dict(url=f'{iShares.ROOT}{self.product_url}/{iShares.AJAX_REQUEST_CODE}',
                        params={'fileType': 'csv',
                                'fileName': f'{self.ticker}_holdings',
@@ -61,7 +64,7 @@ class HoldingsProcessor:
 
         # todo error handling / logging here
         assert response != 200, "response error (not 200)"
-        assert len(response.content) > 0, "empty response"
+        assert len(response.content) > 10, "empty response"
 
         log.info(f'successful response from ishares.com for request: {response.url}')
         return response.content
@@ -77,7 +80,7 @@ class HoldingsProcessor:
         input_file_buffer = BytesIO(self.response_content)
         compressed_file_buffer = BytesIO()
 
-        if self.outputpath == 's3':
+        if self.outputpath.lower() == 's3':
             aws_session = boto3.Session(aws_access_key_id=Aws.AWS_KEY,
                                         aws_secret_access_key=Aws.AWS_SECRET)
             s3 = aws_session.client('s3')
@@ -163,7 +166,20 @@ class HoldingsProcessor:
             log.info(f'pid[{mp.current_process().pid}] wrote locally to: ./data/{self.key_formatted}')
 
 
-def main(ticker: str, holdings_date: str, outputpath: str) -> pd.DataFrame:
+def get_etf_index():
+    return pd.read_csv(f'{iShares.ETF_MASTER_INDEX_LOC}')
+
+
+def get_etf_holdings_df(ticker: str, holdings_date) -> pd.DataFrame:
+    holdings = HoldingsProcessor(ticker, holdings_date, outputpath=None)
+    holdings.get_holdings_df() \
+        .validate_input() \
+        .format_output()
+
+    return holdings.holdings_df
+
+
+def main(ticker: str, holdings_date: str, outputpath: str) -> HoldingsProcessor:
     holdings = HoldingsProcessor(ticker, holdings_date, outputpath)
     holdings.get_holdings_df() \
         .archive_original_csv() \
@@ -172,14 +188,15 @@ def main(ticker: str, holdings_date: str, outputpath: str) -> pd.DataFrame:
         .df_to_filestr() \
         .upload_filestr()
 
-    return holdings.holdings_df
+    return holdings
 
 
 # everything below will only be executed if this script is called from the command line
 # if this file is imported, nothing below will be executed
 if __name__ == "__main__":
     # command line arguments
-    parser = argparse.ArgumentParser(description='Extract-Transform-Load individual iShares ETF holdings for a given ticker and date ')
+    parser = argparse.ArgumentParser(
+        description='Extract-Transform-Load individual iShares ETF holdings for a given ticker and date ')
     parser.add_argument('ticker', help=f'etf ticker you wish to download; '
                                        f'full list of tickers located here: {iShares.ETF_MASTER_INDEX_LOC}')
     parser.add_argument('holdings_date', help='YYYY-MM-DD; must be month-end-trading dates')

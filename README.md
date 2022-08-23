@@ -1,10 +1,9 @@
 # Scrape, Store, and Query iShares ETF holding files
-Before (or after) diving into the code, if you want to understand the context behind this project, see [`READMEQuant.md`](https://github.com/talsan/ishares/blob/master/READMEQuant.md)
+Before (or after) diving into the code, if you want to understand the context behind this project, see [`READMEQuant.md`](https://github.com/talsan/ishares/blob/master/README_Quant.md)
 
 ## Usage Patterns
 #### Modules for getting etf holdings 
-- `etf_downloader.py` contains functions to get individual holdings from ishares.com
-    - event = holdingdate pair
+- `etf_downloader.py` provides functions to get individual etf holdings from ishares.com (wherein each call/event is a `etf_ticker + holding_date` pair).
 #### Batch Processes for syncing iShares.com with your local or s3 filestores
 - `sync_etf_downloader.py`invokes/queues a series of new events keeping local/cloud directories in sync with iShares.com
 - Supports local or S3 file-store (see `outputpath` input parameter)
@@ -65,19 +64,6 @@ optional arguments:
   --overwrite           Overwrite holdings that have already been downloaded
                         to S3 (otherwise it's an update)
 
-```
-
-### Example Usage
-```
-from ishares.utils import s3_helpers, athena_helpers
-
-# get a single file from s3
-df_small = s3_helpers.get_etf_holdings('IWV', '2020-06-30')
-
-# query a lot of data with Athena
-df_big = athena_helpers.query('select * from qcdb.ishares_holdings '
-                              'where etf=\'IWV\' '
-                              'and asofdate between date \'2020-01-31\' and date \'2020-06-30\'')
 ```
 
 ##### Output: 

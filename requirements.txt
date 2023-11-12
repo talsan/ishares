@@ -6,7 +6,7 @@ docutils==0.15.2
 idna==2.9
 jmespath==0.10.0
 lxml==4.5.1
-numpy==1.18.4
+numpy==1.22.0
 pandas==1.0.3
 python-dateutil==2.8.1
 python-dotenv==0.13.0

@@ -3,3 +3,4 @@
 /logs
 /.idea
 /serverless/node_modules
+/__pycache__

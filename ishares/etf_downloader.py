@@ -1,195 +1,191 @@
-import requests
 from datetime import datetime
-import random
-from config import Aws, iShares
+from config import Aws, iShares, ScrapingBee
+from scrapingbee import ScrapingBeeClient
 import pandas as pd
 import argparse
 import os
+import json
 from io import StringIO, BytesIO
 import gzip
 import shutil
 import boto3
-import logging
-import json
 import multiprocessing as mp
-from pandas.tseries.offsets import BDay
-
-log = logging.getLogger(__name__)
 
 # -----------------------------------------------------------------------------------
-# pre-loaded reference data (i.e. things we only want computed once)
+# pre-loaded data
 # -----------------------------------------------------------------------------------
 etf_index = pd.read_csv(iShares.ETF_MASTER_INDEX_LOC).set_index('ticker').to_dict('index')
-
-with open(iShares.HOLDINGS_FILE_SCHEMAS, 'r') as f:
-    holdings_file_schemas = json.load(f)
-
 
 # HoldingsProcessor manages the data-pipeline from ishares.com to aws s3
 class HoldingsProcessor:
 
-    def __init__(self, ticker, holdings_date, outputpath):
+    def __init__(self, ticker, holdings_date):
+
+        # etf-index
+        self.etf_index = pd.read_csv(iShares.ETF_MASTER_INDEX_LOC).set_index('ticker').to_dict('index')
+
         # etf-level information
         self.ticker = ticker
-        self.name = etf_index[ticker]['name']
-        self.start_date = datetime.strptime(etf_index[ticker]['start_date'], '%Y-%m-%d')
-        self.product_url = etf_index[ticker]['product_url']
+        self.name = self.etf_index[ticker]['name']
+        self.start_date = datetime.strptime(self.etf_index[ticker]['start_date'], '%Y-%m-%d')
+        self.product_url = self.etf_index[ticker]['product_url']
 
-        # holdings information
+        # request information
         self.holdings_date = datetime.strptime(holdings_date, '%Y-%m-%d').strftime('%Y-%m-%d')
-        self.response_content = bytes()
-        self.holdings_df = pd.DataFrame()
-        self.input_schema = ''  # detected via validate_input_schema() only after file is sourced
+        self.request_url = ''
 
-        # output info
-        self.outputpath = outputpath
+        # response information
+        self.response_content = bytes()
+        self.response_json = dict()
+        self.formatted_json = list()
+        self.holdings_df = pd.DataFrame()
+
+        # output information
         self.key_raw = f'type=holdings/state=raw/etf={ticker}/asofdate={holdings_date}.gz'
         self.key_formatted = f'type=holdings/state=formatted/etf={ticker}/asofdate={holdings_date}.csv'
-        self.filestr = ''
+        self.filestr = str()
 
-        log.info(f'HoldingsProcessor for {self.holdings_date} successfully initialized')
+        print(f'HoldingsProcessor for {self.ticker} + {self.holdings_date} successfully initialized')
 
-    def request_csv(self):
+    def request_holdings(self):
 
         yyyymmdd = datetime.strptime(self.holdings_date, '%Y-%m-%d').strftime('%Y%m%d')
+        self.request_url = f'{iShares.ROOT}/' \
+                           f'{self.product_url}/1467271812596.ajax?fileType=json&tab=all&asOfDate={yyyymmdd}'
+        print(f'requesting: {self.request_url}')
 
-        request = dict(url=f'{iShares.ROOT}{self.product_url}/{iShares.AJAX_REQUEST_CODE}',
-                       params={'fileType': 'csv',
-                               'fileName': f'{self.ticker}_holdings',
-                               'dataType': 'fund',
-                               'asOfDate': yyyymmdd},
-                       headers={'User-Agent': random.choice(iShares.USER_AGENT_LIST)})
+        sb_client = ScrapingBeeClient(os.environ.get('SCRAPINGBEE_KEY'))
+        def sb_request_w_retry(request_url, timeout, max_retries):
+            for i in range(max_retries):
+                try:
+                    sb_response = sb_client.get(request_url, params={'render_js': 'False'}, timeout=timeout)
+                    return sb_response
+                except BaseException as err:
+                    print(f'err: {err} on attempt {i + 1}')
+                    continue
+            return None
 
-        response = requests.get(**request)
+        response = sb_request_w_retry(self.request_url,
+                                      timeout=ScrapingBee.timeout,
+                                      max_retries=ScrapingBee.max_retries)
 
-        # todo error handling / logging here
-        assert response != 200, "response error (not 200)"
-        assert len(response.content) > 10, "empty response"
+        assert response is not None, f'ScrapingBee client likely timed out (after {ScrapingBee.max_retries} attempts)'
+        assert response != 200, f'{response.status_code}:{response.text}'
+        assert len(response.content) > 10, 'empty response'
 
-        log.info(f'successful response from ishares.com for request: {response.url}')
-        return response.content
+        print(f'response snippet: {response.content[0:200]}')
 
-    def get_holdings_df(self):
-        self.response_content = self.request_csv()
-        csv_buffer = StringIO(self.response_content.decode())
-        self.holdings_df = pd.read_csv(csv_buffer, header=9, thousands=',', na_values='-').dropna(thresh=10)
+        self.response_content = response.content
         return self
 
-    def archive_original_csv(self):
-
+    def archive_response(self):
         input_file_buffer = BytesIO(self.response_content)
         compressed_file_buffer = BytesIO()
 
-        if self.outputpath.lower() == 's3':
-            aws_session = boto3.Session(aws_access_key_id=Aws.AWS_KEY,
-                                        aws_secret_access_key=Aws.AWS_SECRET)
-            s3 = aws_session.client('s3')
+        aws_session = boto3.Session(aws_access_key_id=Aws.AWS_KEY,
+                                    aws_secret_access_key=Aws.AWS_SECRET)
+        s3 = aws_session.client('s3')
 
-            with gzip.GzipFile(fileobj=compressed_file_buffer, mode='wb') as gz:
-                shutil.copyfileobj(input_file_buffer, gz)
-            compressed_file_buffer.seek(0)
+        with gzip.GzipFile(fileobj=compressed_file_buffer, mode='wb') as gz:
+            shutil.copyfileobj(input_file_buffer, gz)
+        compressed_file_buffer.seek(0)
 
-            s3.upload_fileobj(Bucket=Aws.S3_ETF_HOLDINGS_BUCKET,
-                              Key=self.key_raw,
-                              Fileobj=compressed_file_buffer,
-                              ExtraArgs={'ContentType': 'text/plain',
-                                         'ContentEncoding': 'gzip'})
+        s3.upload_fileobj(Bucket=Aws.S3_ETF_HOLDINGS_BUCKET,
+                          Key=self.key_raw,
+                          Fileobj=compressed_file_buffer,
+                          ExtraArgs={'ContentType': 'text/plain',
+                                     'ContentEncoding': 'gzip'})
 
-            s3_output_url = f'{Aws.S3_OBJECT_ROOT}/{Aws.S3_ETF_HOLDINGS_BUCKET}/{self.key_raw}'
-            log.info(f'archive raw to s3 success: {s3_output_url}')
-
-        else:
-            output_path = f'{self.outputpath.rstrip("/")}/{self.key_raw}'
-            if not os.path.exists(os.path.dirname(output_path)):
-                os.makedirs(os.path.dirname(output_path))
-            with gzip.GzipFile(output_path, mode='wb') as gz_out:
-                shutil.copyfileobj(input_file_buffer, gz_out)
-            print(f'pid={mp.current_process().pid} wrote: {self.key_raw} locally to {self.outputpath}')
+        s3_output_url = f'{Aws.S3_OBJECT_ROOT}/{Aws.S3_ETF_HOLDINGS_BUCKET}/{self.key_raw}'
+        print(f'archive raw to s3 success: {s3_output_url}')
 
         return self
 
-    def validate_input(self):
-        # schema/columns validation
-        schema_lookup = [k for k, v in holdings_file_schemas.items()
-                         if v['columns'] == self.holdings_df.columns.to_list()]
-        if len(schema_lookup) == 0:
-            log.error(f'holdings_df columns: {self.holdings_df.columns.to_list()}')
-            raise Exception(f'schema unrecognizable: not found in {iShares.HOLDINGS_FILE_SCHEMAS}')
-        else:
-            log.info(f'schema successfully detected: {schema_lookup[0]}')
-            self.input_schema = schema_lookup[0]
+    def map_raw_item(self, unmapped_item):
+        return {
+            'ticker': unmapped_item[0],
+            'name': unmapped_item[1],
+            'sector': unmapped_item[2],
+            'asset_class': unmapped_item[3],
+            'market_value': unmapped_item[4]['raw'],
+            'weight': unmapped_item[5]['raw'],
+            'notional_value': unmapped_item[6]['raw'],
+            'shares': unmapped_item[7]['raw'],
+            'cusip': unmapped_item[8],
+            'isin': unmapped_item[9],
+            'sedol': unmapped_item[10],
+            'price': unmapped_item[11]['raw'],
+            'location': unmapped_item[12],
+            'exchange': unmapped_item[13],
+            'currency': unmapped_item[14],
+            'fx_rate': unmapped_item[15],
+            'maturity': unmapped_item[16]
+        }
 
-        # holding-data/content validation
-        if self.holdings_df.shape[0] < 5:
-            log.error(self.holdings_df)
-            raise Exception('less than 5 rows in the sourced holding file')
-
+    def holdings_raw_to_json(self):
+        self.response_json = json.loads(self.response_content)
+        input_items = self.response_json['aaData']
+        for input_item in input_items:
+            mapped_item = self.map_raw_item(input_item)
+            self.formatted_json.append(mapped_item)
         return self
 
-    def format_output(self):
-        # column names
-        new_columns = self.holdings_df.columns \
-            .str.lower() \
-            .str.replace('[^a-z_\s]', '') \
-            .str.strip() \
-            .str.replace('\s+', '_')
-        column_map = dict(zip(self.holdings_df.columns, new_columns))
-        self.holdings_df.rename(columns=column_map, inplace=True, errors='raise')
-
-        # column contents
+    def holdings_json_to_df(self):
+        self.holdings_df = pd.DataFrame(self.formatted_json)
+        assert self.holdings_df.shape[0] > 0, 'err: 0 holdings in formatted response'
         self.holdings_df['weight'] /= 100
-        self.holdings_df.insert(0, 'asofdate', self.holdings_date)
-        log.info(f'file successfully formatted prior to s3 upload')
+        self.holdings_df.insert(1, 'etf', self.ticker)
+        self.holdings_df.insert(2, 'holdings_date', self.holdings_date)
         return self
 
     def df_to_filestr(self):
         csv_buffer = StringIO()
-        self.holdings_df.to_csv(csv_buffer, index=False, line_terminator='\n')
+        self.holdings_df.to_csv(csv_buffer, index=False, lineterminator='\n')
         self.filestr = csv_buffer.getvalue()
         return self
 
     def upload_filestr(self) -> None:
-
-        if self.outputpath.lower() == 's3':
-            aws_session = boto3.Session(aws_access_key_id=Aws.AWS_KEY,
-                                        aws_secret_access_key=Aws.AWS_SECRET)
-            s3 = aws_session.client('s3')
-            s3.put_object(Body=self.filestr, Bucket=Aws.S3_ETF_HOLDINGS_BUCKET, Key=self.key_formatted)
-            log.info(f'pid[{mp.current_process().pid}] wrote {self.key_formatted} to s3')
-
-        else:
-            full_outputpath = f'{self.outputpath.rstrip("/")}/{self.key_formatted}'
-            if not os.path.exists(os.path.dirname(full_outputpath)):
-                os.makedirs(os.path.dirname(full_outputpath))
-            with open(full_outputpath, 'w') as f:
-                f.write(self.filestr)
-            log.info(f'pid[{mp.current_process().pid}] wrote locally to: ./data/{self.key_formatted}')
+        aws_session = boto3.Session(aws_access_key_id=Aws.AWS_KEY,
+                                    aws_secret_access_key=Aws.AWS_SECRET)
+        s3 = aws_session.client('s3')
+        s3.put_object(Body=self.filestr, Bucket=Aws.S3_ETF_HOLDINGS_BUCKET, Key=self.key_formatted)
+        print(f'pid[{mp.current_process().pid}] wrote {self.key_formatted} to s3')
 
 
-def get_etf_index():
-    return pd.read_csv(f'{iShares.ETF_MASTER_INDEX_LOC}')
-
-
+# function for one-off request for holdings (e.g. when importing this module in a different process)
 def get_etf_holdings_df(ticker: str, holdings_date) -> pd.DataFrame:
-    holdings = HoldingsProcessor(ticker, holdings_date, outputpath=None)
-    holdings.get_holdings_df() \
-        .validate_input() \
-        .format_output()
-
+    holdings = HoldingsProcessor(ticker, holdings_date)
+    holdings.request_holdings() \
+        .holdings_raw_to_json() \
+        .holdings_json_to_df()
     return holdings.holdings_df
 
 
-def main(ticker: str, holdings_date: str, outputpath: str) -> HoldingsProcessor:
-    holdings = HoldingsProcessor(ticker, holdings_date, outputpath)
-    holdings.get_holdings_df() \
-        .archive_original_csv() \
-        .validate_input() \
-        .format_output() \
+def main(ticker: str, holdings_date: str) -> HoldingsProcessor:
+    holdings = HoldingsProcessor(ticker, holdings_date)
+    holdings.request_holdings() \
+        .archive_response() \
+        .holdings_raw_to_json() \
+        .holdings_json_to_df() \
         .df_to_filestr() \
         .upload_filestr()
 
-    return holdings
+def lambda_handler(event, context):
+    event_dict = {'etf': 'IWV', 'holdings_date': '2023-01-31'}
+    event_json = json.dumps(event_dict)
 
+    print(f'event: {event_json}')
+    try:
+        main(ticker=event_dict['etf'], holdings_date=event_dict['holdings_date'])
+        out_msg = {
+            'statusCode': 200,
+            'body': f'successfully wrote {event}'
+        }
+        print(out_msg)
+        return out_msg
+    except Exception as e:
+        print(str(e))
+        raise e
 
 # everything below will only be executed if this script is called from the command line
 # if this file is imported, nothing below will be executed
@@ -200,16 +196,8 @@ if __name__ == "__main__":
     parser.add_argument('ticker', help=f'etf ticker you wish to download; '
                                        f'full list of tickers located here: {iShares.ETF_MASTER_INDEX_LOC}')
     parser.add_argument('holdings_date', help='YYYY-MM-DD; must be month-end-trading dates')
-    parser.add_argument('outputpath', help=f'where to send output on local machine; if outputpath==\'s3\', output is '
-                                           f'uploaded to the Aws.OUPUT_BUCKET variable defined in config.py')
     args = parser.parse_args()
-
-    # logging (will inherit log calls from utils.pricing and utils.s3_helpers)
-    this_file = os.path.basename(__file__).replace('.py', '')
-    log_id = f'{this_file}_{datetime.now().strftime("%Y%m%dT%H%M%S")}'
-    logging.basicConfig(filename=f'./logs/{log_id}.log', level=logging.INFO,
-                        format=f'%(asctime)s - %(name)s - %(levelname)s - {args.ticker} - %(message)s')
 
     # run main
     main(args.ticker, args.holdings_date, args.outputpath)
-    log.info(f'successfully completed script')
+

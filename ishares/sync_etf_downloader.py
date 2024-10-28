@@ -1,15 +1,12 @@
 from datetime import datetime
-import random
 from config import Aws, iShares
 import pandas as pd
 import argparse
 import os
-import time
 import logging
-import glob
-import re
-from ishares.utils import s3_helpers, pricing
+from ishares.utils import s3_helpers
 from ishares import etf_downloader
+import pandas_market_calendars as mcal
 
 log = logging.getLogger(__name__)
 
@@ -17,57 +14,55 @@ log = logging.getLogger(__name__)
 # the funds inception date so we know how far to go back to get holdings
 etf_index = pd.read_csv(iShares.ETF_MASTER_INDEX_LOC).set_index('ticker').to_dict('index')
 
+def get_trading_day_month_ends(exchange_code, start_date, end_date, output_format):
+    nyse = mcal.get_calendar(exchange_code)
+    trading_days_df = pd.DataFrame({'trading_date':
+                                        nyse.valid_days(start_date=start_date,
+                                                        end_date=end_date)
+                                    })
+    trading_days_df['yymm'] = trading_days_df['trading_date'].dt.strftime('%y%m')
+    trading_day_month_ends = trading_days_df.groupby('yymm')['trading_date'].max(). \
+        dt.strftime(output_format).to_list()
 
-def build_holdings_download_queue(ticker: str, outputpath: str, overwrite: bool = False) -> list:
+    return trading_day_month_ends
+
+
+def build_holdings_download_queue(ticker: str, overwrite: bool = False) -> list:
     first_available_date = datetime.strptime(iShares.FIRST_AVAILABLE_HOLDINGS_DATE, '%Y-%m-%d')
     etf_start_date = datetime.strptime(etf_index[ticker]['start_date'], '%Y-%m-%d')
 
-    tradingday_month_ends = pricing.get_tradingday_monthends(ticker='IBM',
-                                                             start_date=iShares.FIRST_AVAILABLE_HOLDINGS_DATE)
+    request_start_date = max([first_available_date, etf_start_date])
+    request_end_date = datetime.now().strftime('%Y-%m-%d')
 
-    all_possible_dates = [datetime.strftime(tme, '%Y-%m-%d')
-                          for tme in tradingday_month_ends
-                          if (tme > etf_start_date) and (tme >= first_available_date)]
+    tradingday_month_ends = get_trading_day_month_ends('NYSE', request_start_date, request_end_date, '%Y-%m-%d')
 
     path_prefix = f'type=holdings/state=formatted/etf={ticker}'
     file_prefix = 'asofdate='
 
     if overwrite:
-        holdings_download_list = all_possible_dates
+        holdings_download_list = tradingday_month_ends
     else:
-        if outputpath == 's3':
-            existing_download_dates = s3_helpers.list_keys(Bucket=Aws.S3_ETF_HOLDINGS_BUCKET,
-                                                           Prefix=f'{path_prefix}/{file_prefix}',
-                                                           full_path=False,
-                                                           remove_ext=True)
-        else:
-            existing_download_dates = [re.sub(file_prefix, '', re.sub('\.[^.]+$', '', os.path.basename(key)))
-                                       for key in glob.glob(f'{outputpath.rstrip("/")}/**/*.csv', recursive=True)]
+        existing_download_dates = s3_helpers.list_keys(Bucket=Aws.S3_ETF_HOLDINGS_BUCKET,
+                                                       Prefix=f'{path_prefix}/{file_prefix}',
+                                                       full_path=False,
+                                                       remove_ext=True)
 
-        unprocessed_download_dates = sorted(list(set(all_possible_dates) - set(existing_download_dates)))
+        unprocessed_download_dates = sorted(list(set(tradingday_month_ends) - set(existing_download_dates)))
         holdings_download_list = unprocessed_download_dates
 
     log.info(f'queued {len(holdings_download_list)} holding dates for download')
     return holdings_download_list
 
 
-def sleep_between_requests() -> None:
-    sleep_seconds = random.randint(iShares.MIN_SLEEP_BETWEEN_REQUESTS,
-                                   iShares.MAX_SLEEP_BETWEEN_REQUESTS)
-    log.info(f'post request sleep for {sleep_seconds} seconds ...')
-    time.sleep(sleep_seconds)
-
-
-def main(tickers: list, outputpath: str, overwrite: bool) -> None:
+def main(tickers: list, overwrite: bool) -> None:
     print(tickers)
     for ticker in tickers:
-        holdings_download_list = build_holdings_download_queue(ticker, outputpath, overwrite)
+        holdings_download_list = build_holdings_download_queue(ticker, overwrite)
         for holding_date in holdings_download_list:
             try:
-                etf_downloader.main(ticker, holding_date, outputpath)
+                etf_downloader.main(ticker, holding_date)
             except BaseException as e:
                 log.error(e)
-            sleep_between_requests()
 
 
 # everything below will only be executed if this script is called from the command line
@@ -77,9 +72,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='batch process that queues-and-invokes a series of etf_downloaders')
     parser.add_argument('tickers', help=f'list of ETF Tickers (space-delimeted) you wish to download; '
                                         f'full list of tickers located here: {iShares.ETF_MASTER_INDEX_LOC}', nargs='+')
-    parser.add_argument('--outputpath', help=f'where to send output on local machine; if outputpath==\'s3\', output is '
-                                             f'uploaded to the Aws.OUPUT_BUCKET variable defined in config.py',
-                        required=True)
     parser.add_argument('--overwrite',
                         help=f'overwrite (re-download) etf holdings that have already been downloaded to <outputpath>; '
                              f'otherwise it\'s an update (i.e. only download new holdings files for a given ETF)',
@@ -93,5 +85,5 @@ if __name__ == "__main__":
                         format=f'%(asctime)s - %(name)s - %(levelname)s - {args.tickers} - %(message)s')
 
     # run main
-    main(args.tickers, args.outputpath, args.overwrite, )
+    main(args.tickers,args.overwrite)
     log.info(f'successfully completed script')

@@ -27,6 +27,7 @@ Output:
         product_url -- etf landing page (path to etf history of holdings files)
 '''
 
+
 def scrape_etf_index():
     # source html document object
     r = requests.get(iShares.LANDING_PAGE)
@@ -41,12 +42,19 @@ def scrape_etf_index():
     # get desired content into a dataframe
     etf_info = pd.DataFrame({'ticker': etf_table.xpath(f'./tbody/tr/td[{headers.index("Ticker") + 1}]//text()'),
                              'name': etf_table.xpath(f'./tbody/tr/td[{headers.index("Name") + 1}]//text()'),
-                             'start_date': etf_table.xpath(f'./tbody/tr/td[{headers.index("Incept. Date") + 1}]//text()'),
+                             'start_date': etf_table.xpath(
+                                 f'./tbody/tr/td[{headers.index("Incept. Date") + 1}]//text()'),
                              'product_url': etf_table.xpath('./tbody/tr/td[@class="links"][1]/a/@href')})
 
     # format dataframe start_date column to %Y%m%d
     etf_info['start_date'] = pd.to_datetime(etf_info['start_date'], format='%b %d, %Y')
 
+    return etf_info
+
+
 def main():
     etf_info = scrape_etf_index()
-    etf_info.to_csv(iShares.ETF_MASTER_INDEX_LOC)
+    etf_info.to_csv(iShares.ETF_MASTER_INDEX_LOC, index=False)
+
+if __name__ == '__main__':
+    main()

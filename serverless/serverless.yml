@@ -1,0 +1,49 @@
+service: ishares
+provider:
+  name: aws
+  stage: dev
+  region: us-west-2
+  runtime: python3.9
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+       - s3:*
+       - s3-object-lambda:*
+      Resource: '*'
+  ecr:
+    scanOnPush: true
+    images:
+      ishares_img:
+        path: .
+  deploymentBucket:
+    name: clai-serverless-deployments
+    blockPublicAccess: true
+
+plugins:
+      - serverless-deployment-bucket
+
+
+
+functions:
+  etf_downloader:
+    memorySize: 3000
+    timeout: 850
+    image:
+      name: ishares_img
+      entryPoint:
+        - /lambda-entrypoint.sh
+      command:
+        - etf_downloader.lambda_handler
+  queue_etf_downloader:
+    memorySize: 3000
+    timeout: 850
+    image:
+      name: ishares_img
+      entryPoint:
+        - /lambda-entrypoint.sh
+      command:
+        - queue_etf_downloader.lambda_handler
+
+
+
+

@@ -1,6 +1,6 @@
 import boto3
 from botocore.exceptions import ClientError
-from config import Aws, iShares
+from config import Aws
 import pandas as pd
 from io import BytesIO
 import re

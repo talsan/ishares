@@ -10,7 +10,7 @@ start_date = '2019-12-31'
 end_date = datetime.now().strftime('%Y-%m-%d')
 output_file = './data/direct_downloader/IWB_holdings_20220823.csv'
 ```
-#### Output
+#### Output test
 | as_of_date | ticker | name                           | sector                 | asset_class | market_value | weight  | notional_value | shares  | cusip     | isin         | sedol   | price   | location      | exchange                     | currency | fx_rate | maturity |
 | ---------- | ------ | ------------------------------ | ---------------------- | ----------- | ------------ | ------- | -------------- | ------- | --------- | ------------ | ------- | ------- | ------------- | ---------------------------- | -------- | ------- | -------- |
 | 2019-12-31 | AAPL   | APPLE INC                      | Information Technology | Equity      | 980033676.65 | 4.38868 | 980033676.65   | 3337421 | 037833100 | US0378331005 | 2046251 | 293.65  | United States | NASDAQ                       | USD      | 1.00    | -        |

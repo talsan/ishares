@@ -1,7 +1,3 @@
--- table definition file (ddl)
--- no python code depends on it, but if we ever need to re-create or edit the etf_holdings table, this is where
--- we'd start
-
 CREATE EXTERNAL TABLE IF NOT EXISTS qcdb.etf_holdings (
   `asofdate` date,
   `ticker` string,

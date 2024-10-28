@@ -2,7 +2,7 @@
 Before (or after) diving into the code, if you want to understand the context behind this project, see [`READMEQuant.md`](https://github.com/talsan/ishares/blob/master/README_Quant.md)
 
 ## Quickly Get Monthly Holdings for an iShares ETF
-- Run this script: [`./ishares/direct_downloader.py`](https://github.com/talsan/ishares/blob/master/ishares/direct_downloader.py)
+- Run this script: [`./ishares/direct_downloader.py`](https://github.com/talsan/ishares/blob/master/ishares/easy_downloader.py)
 #### Inputs
 ```pyton
 etf_landing_page = 'https://www.ishares.com/us/products/239707/ishares-russell-1000-etf'
